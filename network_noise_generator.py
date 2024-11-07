@@ -3,6 +3,7 @@ import random
 import time
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import argparse
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     """Custom HTTP server handler to respond to incoming requests."""
@@ -63,17 +64,33 @@ def simulate_background_noise(destination_ip, destination_port):
     for _ in range(num_threads):
         t1 = threading.Thread(target=generate_random_http_traffic, args=(destination_ip, destination_port))
         t2 = threading.Thread(target=generate_random_tcp_connections, args=(destination_ip, destination_port))
+        t1.daemon = True
+        t2.daemon = True
         threads.extend([t1, t2])
 
     for t in threads:
         t.start()
 
-    for t in threads:
-        t.join()
+    # Keep the main thread alive while noise is being generated
+    while True:
+        time.sleep(1)
+
+def start_noise(destination_ip, destination_port, server=False):
+    """Start network noise generation, optionally with an HTTP server."""
+    if server:
+        # Start the HTTP server in a separate thread
+        server_thread = threading.Thread(target=start_http_server, args=(('0.0.0.0', destination_port),))
+        server_thread.daemon = True
+        server_thread.start()
+        print("HTTP server started for noise generation.")
+
+    # Start background noise generation
+    noise_thread = threading.Thread(target=simulate_background_noise, args=(destination_ip, destination_port))
+    noise_thread.daemon = True
+    noise_thread.start()
+    print(f"Background noise generation started for {destination_ip}:{destination_port}")
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Background Network Noise Generator with HTTP Server")
     parser.add_argument("destination_ip", help="Destination IP address")
     parser.add_argument("destination_port", type=int, help="Destination port number")
@@ -85,6 +102,7 @@ if __name__ == "__main__":
         server_thread = threading.Thread(target=start_http_server, args=(('0.0.0.0', args.destination_port),))
         server_thread.daemon = True
         server_thread.start()
+        print("HTTP server started for noise generation.")
 
     print(f"Starting background noise generation for {args.destination_ip}:{args.destination_port}")
     simulate_background_noise(args.destination_ip, args.destination_port)
