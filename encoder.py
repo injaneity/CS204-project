@@ -52,33 +52,34 @@ def embed_in_user_agent(packet, bits):
             pass  # Ignore decoding errors
     return packet
 
-def embed_data_into_packet(packet, data_bits):
-    """Embed 8 bits of data into different packet fields."""
-    ipid_bits = data_bits[0:2]
-    ttl_bits = data_bits[2:4]
-    window_bits = data_bits[4:6]
-    ua_bits = data_bits[6:8]
-    
-    packet = embed_in_ipid(packet, ipid_bits)
-    packet = embed_in_ttl(packet, ttl_bits)
-    packet = embed_in_window(packet, window_bits)
-    packet = embed_in_user_agent(packet, ua_bits)
+def embed_data_into_packet(packet, data_bits, encoding_fields):
+    """Embed 8 bits of data into specified packet fields."""
+    if 'ipid' in encoding_fields:
+        packet = embed_in_ipid(packet, data_bits[0:2])
+    if 'ttl' in encoding_fields:
+        packet = embed_in_ttl(packet, data_bits[2:4])
+    if 'window' in encoding_fields:
+        packet = embed_in_window(packet, data_bits[4:6])
+    if 'user_agent' in encoding_fields:
+        packet = embed_in_user_agent(packet, data_bits[6:8])
     return packet
 
-def embed_with_noise(packet, data_bits):
-    """Embed data with added noise for better stealth."""
-    packet = embed_data_into_packet(packet, data_bits)
-    
-    random_padding = ''.join(random.choices(['A', 'B', 'C', 'D'], k=random.randint(0, 10)))
-    if Raw in packet:
-        packet[Raw].load += random_padding.encode()
-    
-    delay = random.uniform(0.05, 0.2)
-    time.sleep(delay)
+def embed_with_noise(packet, data_bits, noise_type, noise_level, add_noise):
+    """Embed data with customizable noise for better stealth."""
+    packet = embed_data_into_packet(packet, data_bits, encoding_fields=['ipid', 'ttl', 'window', 'user_agent'])
+
+    if add_noise:
+        if noise_type == 'random_padding':
+            random_padding = ''.join(random.choices(['A', 'B', 'C', 'D'], k=random.randint(0, noise_level)))
+            if Raw in packet:
+                packet[Raw].load += random_padding.encode()
+        elif noise_type == 'delay':
+            delay = random.uniform(0.05, 0.2) * noise_level
+            time.sleep(delay)
     
     return packet
 
-def send_covert_message(destination_ip, destination_port, message):
+def send_covert_message(destination_ip, destination_port, message, encoding_fields, noise_type, noise_level, add_noise):
     """Send a covert message to the destination IP and port."""
     binary_message = encode_message(message)
     chunks = split_into_chunks(binary_message, 8)
@@ -87,22 +88,27 @@ def send_covert_message(destination_ip, destination_port, message):
         if len(chunk) < 8:
             chunk = chunk.ljust(8, '0')
         
-        for _ in range(2):
-            ip = IP(dst=destination_ip)
-            tcp = TCP(sport=random.randint(1024, 65535), dport=destination_port, flags='S', window=1024)
-            http_payload = f"GET / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
-            pkt = ip / tcp / Raw(load=http_payload)
-            
-            pkt = embed_with_noise(pkt, chunk)
-            send(pkt, verbose=0)
+        ip = IP(dst=destination_ip)
+        tcp = TCP(sport=random.randint(1024, 65535), dport=destination_port, flags='S', window=1024)
+        http_payload = f"GET / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
+        pkt = ip / tcp / Raw(load=http_payload)
+        
+        pkt = embed_with_noise(pkt, chunk, noise_type, noise_level, add_noise)
+        send(pkt, verbose=0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Network Steganography Encoder")
     parser.add_argument("destination_ip", help="Destination IP address")
     parser.add_argument("destination_port", type=int, help="Destination port number")
     parser.add_argument("message", help="Covert message to send")
+    parser.add_argument("--encoding_fields", nargs='+', default=['ipid', 'ttl', 'window', 'user_agent'],
+                        help="Specify fields for encoding (e.g., ipid ttl window user_agent)")
+    parser.add_argument("--noise_type", choices=['random_padding', 'delay', 'none'], default='random_padding',
+                        help="Type of noise to add")
+    parser.add_argument("--noise_level", type=int, default=5, help="Amount of noise to add")
+    parser.add_argument("--add_noise", action='store_true', help="Include noise in the embedding process")
     args = parser.parse_args()
 
     print(f"Sending covert message to {args.destination_ip}:{args.destination_port}")
-    send_covert_message(args.destination_ip, args.destination_port, args.message)
+    send_covert_message(args.destination_ip, args.destination_port, args.message, args.encoding_fields, args.noise_type, args.noise_level, args.add_noise)
     print("Message sent successfully.")
