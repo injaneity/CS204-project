@@ -53,6 +53,7 @@ def main():
     ]
 
     save_to_config(destination_ip, destination_port, header_bit_fields)
+    
     # Generate random messages to send
     messages = [generate_random_message(50) for _ in range(2)]
     
@@ -67,8 +68,6 @@ def main():
 
     # Give the decoder some time to start
     time.sleep(2)
-
-
 
     # Run the encoder with the specified settings and messages
     encoder.start_encoder(
