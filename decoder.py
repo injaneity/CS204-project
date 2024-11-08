@@ -5,9 +5,12 @@ from stego_utils import read_config
 binary_message = ""
 bit_accumulator = ""
 callback_global = None
+verbose_global = False
+str_accumulator= ""
+packet_counter_global = 1
 
 def packet_handler(pkt):
-    global binary_message, bit_accumulator, header_bit_fields, callback_global
+    global binary_message, bit_accumulator, header_bit_fields, callback_global, verbose_global, str_accumulator, packet_counter_global
     if IP in pkt and TCP in pkt:
         data_bits = ""
         # Extract bits based on headers specified in config
@@ -62,35 +65,50 @@ def packet_handler(pkt):
                         return
             else:
                 print(f"Unknown header: {header}")
+        if verbose_global:
+            print(f"packet {packet_counter_global} received! bits extracted: >{data_bits}<")
+            packet_counter_global += 1
+        
         # Accumulate bits
         bit_accumulator += data_bits
-        # Try to decode bytes from the accumulated bits
-        while len(bit_accumulator) >= 8:
-            byte_bits = bit_accumulator[:8]
-            bit_accumulator = bit_accumulator[8:]
-            try:
-                char = chr(int(byte_bits, 2))
-                if callback_global:
-                    callback_global(char)
-                print(char, end='', flush=True)
-            except ValueError:
-                continue
 
-def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None, callback=None):
-    global header_bit_fields, bit_accumulator, binary_message, callback_global
+        if verbose_global:
+            # Accumulate all bits without decoding in verbose mode until all messages are received
+            while len(bit_accumulator) >= 8:
+                byte_bits = bit_accumulator[:8]
+                bit_accumulator = bit_accumulator[8:]
+                try:
+                    char = chr(int(byte_bits, 2))
+                    if callback_global:
+                        callback_global(char)
+                    str_accumulator+=char
+                except ValueError:
+                    pass  # Ignore incomplete or invalid byte sequences
+        else:
+            # Decode bytes from accumulated bits immediately in non-verbose mode
+            while len(bit_accumulator) >= 8:
+                byte_bits = bit_accumulator[:8]
+                bit_accumulator = bit_accumulator[8:]
+                try:
+                    char = chr(int(byte_bits, 2))
+                    if callback_global:
+                        callback_global(char)
+                    print(char, end='', flush=True)
+                except ValueError:
+                    continue  # Ignore incomplete or invalid byte sequences
+
+def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None, callback=None, verbose=False):
+    global header_bit_fields, bit_accumulator, binary_message, callback_global, verbose_global, str_accumulator
+    verbose_global = verbose
     callback_global = callback
     # Read configuration from config.txt
     config, port, _ = read_config()
     header_bit_fields = []
     for header, bits in config.items():
         header_bit_fields.append((header, bits))
-    total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
     print("Configuration loaded in decoder.")
-    # for header, bits in header_bit_fields:
-    #     print(f"Header: {header}, Bits: {bits}")
-    # print(f"Total bits per packet: {total_bits_per_packet}")
-    print(f"Listening on port: {port}\n")
-    print("Decoding messages... Press Ctrl+C to stop.")
+    print(f"Listening on port: {port}")
+    print("Decoding messages... Press Ctrl+C to stop.\n")
 
     # Build the sniff filter if not provided
     if sniff_filter is None:
@@ -101,6 +119,9 @@ def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None, cal
         sniff(filter=sniff_filter, prn=packet_handler, store=0, timeout=timeout)
     except KeyboardInterrupt:
         print("\nSniffing stopped by user.")
+    
+    if verbose_global:
+        print(f"final accumulated message > {str_accumulator}")
 
 if __name__ == "__main__":
     start_decoder()

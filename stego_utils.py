@@ -1,5 +1,10 @@
-
 from scapy.all import IP, TCP, IPOption, Raw
+import random
+import time
+
+def encode_message(message):
+    """Convert message to a binary string."""
+    return format(message, '08b') 
 
 def embed_in_ipid(packet, bits, num_bits):
     """Embed num_bits into the IPID field."""
@@ -86,11 +91,28 @@ def embed_in_user_agent(packet, bits, num_bits):
             print(f"Error embedding in User-Agent: {e}")
     return packet
 
-def embed_data_into_packet(packet, data_bits, header_bit_fields):
+def embed_with_noise(packet, data_bits, header_bit_fields, noise_type, noise_level, add_noise, verbose):
+    """Embed data with customizable noise for better stealth."""
+    packet = embed_data_into_packet(packet, data_bits, header_bit_fields, verbose)
+    
+    if add_noise:
+        if noise_type == 'random_padding':
+            random_padding = ''.join(random.choices(['A', 'B', 'C', 'D'], k=random.randint(0, noise_level)))
+            if Raw in packet:
+                packet[Raw].load += random_padding.encode()
+        elif noise_type == 'delay':
+            delay = random.uniform(0.05, 0.2) * noise_level
+            time.sleep(delay)
+    
+    return packet
+
+def embed_data_into_packet(packet, data_bits, header_bit_fields, verbose):
     """Embed data bits into specified packet fields."""
     bit_index = 0
     for header, num_bits in header_bit_fields:
         bits_to_embed = data_bits[bit_index:bit_index+num_bits]
+        if verbose:
+            print(f"embedding >{bits_to_embed}< in {header}")
         if len(bits_to_embed) < num_bits:
             bits_to_embed = bits_to_embed.ljust(num_bits, '0')
         if header == 'ipid':
@@ -129,3 +151,19 @@ def read_config():
             elif line.startswith('Destination IP:'):
                 destination_ip = line.strip().split(':')[1].strip()
     return config, port, destination_ip
+
+def save_to_config(destination_ip, destination_port, header_bit_fields):
+    total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
+    # Output configuration
+    print("\nConfiguration saved:")
+    for header, bits in header_bit_fields:
+        print(f"Header: {header}, Bits: {bits}")
+    print(f"Total bits per packet: {total_bits_per_packet}\n")
+    # Save configuration to a file
+    with open('config.txt', 'w') as f:
+        f.write("Configuration:\n")
+        for header, bits in header_bit_fields:
+            f.write(f"Header: {header}, Bits: {bits}\n")
+        f.write(f"Total bits per packet: {total_bits_per_packet}\n")
+        f.write(f"Port: {destination_port}\n")
+        f.write(f"Destination IP: {destination_ip}\n")

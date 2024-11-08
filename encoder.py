@@ -17,6 +17,7 @@ headers_info = {
     'ip_options': {'max_bits': 320},   # Up to 40 bytes
     'user_agent': {'max_bits': 8},     # Modifiable within the constraints
 }
+packet_counter_global = 1
 
 def encode_message(message):
     """Convert message to a binary string."""
@@ -26,13 +27,19 @@ def split_into_chunks(data, chunk_size=8):
     """Split binary data into chunks of specified size."""
     return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
 
-def send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise):
+def send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise, verbose):
+    global packet_counter_global
     """Send a covert message to the destination IP and port."""
     binary_message = encode_message(message)
     total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
     chunks = split_into_chunks(binary_message, total_bits_per_packet)
-
-    for chunk in chunks:
+    if verbose:
+        print(f"message converted to bits: {chunks}")
+    for i, chunk in enumerate(chunks):
+        if verbose:
+            print()
+            print(f"embedding chunk >{chunk}< into packet {packet_counter_global}")
+            packet_counter_global += 1
         if len(chunk) < total_bits_per_packet:
             chunk = chunk.ljust(total_bits_per_packet, '0')
 
@@ -44,7 +51,7 @@ def send_covert_message(destination_ip, destination_port, message, header_bit_fi
         pkt = ip / tcp / Raw(load=http_payload)
 
         # Call embed_with_noise from the noise module
-        pkt = noise.embed_with_noise(pkt, chunk, header_bit_fields, noise_type, noise_level, add_noise)
+        pkt = stego_utils.embed_with_noise(pkt, chunk, header_bit_fields, noise_type, noise_level, add_noise, verbose)
         send(pkt, verbose=0)
 
 def start_noise_generation(destination_ip, destination_port, server=False):
@@ -84,7 +91,7 @@ def get_user_configuration():
         exit()
     return selected_headers
 
-def start_encoder(load_config=False, use_noise=None, messages=None):
+def start_encoder(load_config=False, use_noise=None, messages=None, verbose=False):
     if load_config:
         config, destination_port, destination_ip = read_config()
         header_bit_fields = []
@@ -101,7 +108,9 @@ def start_encoder(load_config=False, use_noise=None, messages=None):
         header_bit_fields = []
         for header, bits in selected_headers.items():
             header_bit_fields.append((header, bits))
-    
+        stego_utils.save_to_config(destination_ip,destination_port,header_bit_fields)
+        verbose = input("Verbose? (yes/no): ").lower() == 'yes'
+        
     
     # Ask if the user wants to add noise at the start if not provided
     if use_noise is None:
@@ -139,12 +148,12 @@ def start_encoder(load_config=False, use_noise=None, messages=None):
             if message.lower() == 'exit':
                 print("Exiting.")
                 break
-            send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
+            send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise, verbose)
             print("Message sent successfully.\n")
     else:
         # Send provided messages
         for message in messages:
-            send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
+            send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise, verbose)
 
 
 if __name__ == "__main__":

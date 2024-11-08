@@ -5,22 +5,7 @@ import random
 import string
 import encoder
 import decoder
-
-def save_to_config(destination_ip, destination_port, header_bit_fields):
-    total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
-    # Output configuration
-    print("\nConfiguration saved:")
-    for header, bits in header_bit_fields:
-        print(f"Header: {header}, Bits: {bits}")
-    print(f"Total bits per packet: {total_bits_per_packet}\n")
-    # Save configuration to a file
-    with open('config.txt', 'w') as f:
-        f.write("Configuration:\n")
-        for header, bits in header_bit_fields:
-            f.write(f"Header: {header}, Bits: {bits}\n")
-        f.write(f"Total bits per packet: {total_bits_per_packet}\n")
-        f.write(f"Port: {destination_port}\n")
-        f.write(f"Destination IP: {destination_ip}\n")
+import stego_utils
 
 def generate_random_message(length=10):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -36,52 +21,54 @@ headers_info = {
     'user_agent': {'max_bits': 8},     # Modifiable within the constraints
 }
 
-def main(x):
+def main(msg_len=20, msg_count=2, verbose=False, buffer_time_to_load=5):
     # Define the destination IP and port
     destination_ip = '192.168.1.100'  # Use localhost for testing
     destination_port = 80      # Use a test port
 
     # Sum must be multiple of 8
     header_bit_fields = [
-        ('ipid', 2),            # Up to 16 bits
-        ('ttl', 2),             # Up to 8 bits
-        ('window', 2),         # Up to 16 bits
-        # ('tcp_reserved', 2),    # Up to 4 bits
-        # ('tcp_options', 2),     # Up to 320 bits
-        # ('ip_options', 2),      # Up to 320 bits
-        ('user_agent', 2),      # Up to 8 bits
+        ('ipid', 3),            # Up to 16 bits
+        ('ttl', 4),             # Up to 8 bits
+        ('window', 5),         # Up to 16 bits
+        ('tcp_reserved', 3),    # Up to 4 bits
+        ('tcp_options', 6),     # Up to 320 bits
+        ('ip_options', 6),      # Up to 320 bits
+        ('user_agent', 5),      # Up to 8 bits
     ]
 
-    save_to_config(destination_ip, destination_port, header_bit_fields)
-    # Generate random messages to send
-    messages = [generate_random_message(x) for _ in range(1)]
+    stego_utils.save_to_config(destination_ip, destination_port, header_bit_fields)
+    # # Generate random messages to send using method parameters
+    # messages = [generate_random_message(msg_len) for _ in range(msg_count)]
+    
+    # Generate custom message
+    messages = ["Hello this is a secret message. I only want to send it once" for _ in range(1)]
     
     for i, message in enumerate(messages):
         print(f"Message {i + 1}: {message}")
     print()
     
     # Start the decoder in a separate thread
-    decoder_thread = threading.Thread(target=decoder.start_decoder)
+    # May need to adjust timeout if verbose is on
+    decoder_thread = threading.Thread(target=lambda: decoder.start_decoder(timeout=buffer_time_to_load, verbose=verbose))
     decoder_thread.daemon = True
     decoder_thread.start()
 
     # Give the decoder some time to start
     time.sleep(1)
 
-
     # Run the encoder with the specified settings and messages
     encoder.start_encoder(
         load_config=True,
-        use_noise=False,
-        messages=messages
+        use_noise=True,
+        messages=messages,
+        verbose=verbose
     )
 
     # Give some time for the messages to be processed
-    time.sleep(5)
+    time.sleep(buffer_time_to_load)
 
     print("\nEvaluation completed.")
 
 if __name__ == '__main__':
-    # Call main() with a specific message length, e.g., 5
-    for i in range(100):
-        main(i)
+    main(msg_len=8, msg_count=1,verbose=True,buffer_time_to_load=5)

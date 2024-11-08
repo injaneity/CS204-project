@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QRect
 # Import your backend modules
 import encoder
 import decoder
-import evaluate
+import stego_utils
 
 class PacketVisualization(QWidget):
     def __init__(self, parent=None):
@@ -170,7 +170,7 @@ class SteganographyApp(QMainWindow):
             print(f"Encoding message: {message}")
             print(f"Using headers: {selected_headers}")
             print(f"Sending to: {destination_ip}:{destination_port}")
-            evaluate.save_to_config(destination_ip, destination_port, selected_headers)
+            stego_utils.save_to_config(destination_ip, destination_port, selected_headers)
             encoder.start_encoder(
                 load_config=True,
                 use_noise=False,
