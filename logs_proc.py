@@ -7,8 +7,8 @@ cluster_count = 0
 prev_timestamp = None
 TIME_APART_THRESHOLD = 2
 
-# Open and read the JSON file
-with open('logs.json', 'r') as f:
+# Open and read the text file
+with open('alert_json.txt', 'r') as f:
     for line in f:
         line = line.strip()
         if not line:
@@ -19,7 +19,7 @@ with open('logs.json', 'r') as f:
         
         # Extract and parse the timestamp
         timestamp_str = entry['timestamp']
-        # The format is "MM/DD-HH:MM:SS.microsecond", we assume the current year
+        # The format is "MM/DD-HH:MM:SS.microsecond", assuming the current year
         timestamp = datetime.strptime(timestamp_str, "%m/%d-%H:%M:%S.%f")
         timestamp = timestamp.replace(year=datetime.now().year)
         
