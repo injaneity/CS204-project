@@ -39,7 +39,7 @@ headers_info = {
 def main():
     # Define the destination IP and port
     destination_ip = '192.168.1.100'  # Use localhost for testing
-    destination_port = 80      # Use a test port
+    destination_port = 513      # Use a test port
 
     for header, info in headers_info.items():
         for bits in range(8, info['max_bits'] + 1, 8):
@@ -68,3 +68,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print(time.time())
