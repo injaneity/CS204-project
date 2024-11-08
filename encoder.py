@@ -2,6 +2,8 @@ from scapy.all import *
 import random
 import time
 import argparse
+import threading
+import network_noise_generator  # Ensure this is in the same directory or properly installed
 
 def encode_message(message):
     """Convert message to a binary string."""
@@ -76,7 +78,7 @@ def embed_with_noise(packet, data_bits, noise_type, noise_level, add_noise):
         elif noise_type == 'delay':
             delay = random.uniform(0.05, 0.2) * noise_level
             time.sleep(delay)
-    
+
     return packet
 
 def send_covert_message(destination_ip, destination_port, message, encoding_fields, noise_type, noise_level, add_noise):
@@ -90,11 +92,16 @@ def send_covert_message(destination_ip, destination_port, message, encoding_fiel
         
         ip = IP(dst=destination_ip)
         tcp = TCP(sport=random.randint(1024, 65535), dport=destination_port, flags='S', window=1024)
-        http_payload = f"GET / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
+        unique_identifier = "AN21NY "
+        http_payload = f"GET / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: Mozilla/5.0 {unique_identifier}\r\n\r\n"
         pkt = ip / tcp / Raw(load=http_payload)
         
         pkt = embed_with_noise(pkt, chunk, noise_type, noise_level, add_noise)
         send(pkt, verbose=0)
+
+def start_noise_generation(destination_ip, destination_port, server=False):
+    """Start background noise generation."""
+    network_noise_generator.start_noise(destination_ip, destination_port, server=server)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Network Steganography Encoder")
@@ -107,7 +114,16 @@ if __name__ == "__main__":
                         help="Type of noise to add")
     parser.add_argument("--noise_level", type=int, default=5, help="Amount of noise to add")
     parser.add_argument("--add_noise", action='store_true', help="Include noise in the embedding process")
+    parser.add_argument("--start_noise_gen", action='store_true', help="Start background network noise generation")
+    parser.add_argument("--noise_server", action='store_true', help="Start an HTTP server for noise generation")
     args = parser.parse_args()
+
+    if args.start_noise_gen:
+        # Start network noise generation in a separate thread
+        noise_thread = threading.Thread(target=start_noise_generation, args=(args.destination_ip, args.destination_port, args.noise_server))
+        noise_thread.daemon = True
+        noise_thread.start()
+        print("Background noise generation started.")
 
     print(f"Sending covert message to {args.destination_ip}:{args.destination_port}")
     send_covert_message(args.destination_ip, args.destination_port, args.message, args.encoding_fields, args.noise_type, args.noise_level, args.add_noise)

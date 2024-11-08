@@ -6,7 +6,7 @@ def decode_covert_message(packets):
     binary_message = ""
     for pkt in packets:
         if IP in pkt and TCP in pkt:
-            # extracts from all header fields
+            # Extracts from all header fields
             ipid_bits = format(pkt[IP].id, '016b')[-2:]
             ttl_bits = format(pkt[IP].ttl, '08b')[-2:]
             window_bits = format(pkt[TCP].window, '016b')[-2:]
@@ -14,6 +14,8 @@ def decode_covert_message(packets):
             if Raw in pkt:
                 try:
                     payload = pkt[Raw].load.decode()
+                    if "AN21NY" not in payload:
+                        continue
                     if "User-Agent: " in payload:
                         parts = payload.split("User-Agent: ")
                         user_agent = parts[1].split("\r\n")[0]
