@@ -25,8 +25,10 @@ def main():
     destination_ip = '192.168.1.100'  # Use localhost for testing
     destination_port = 80      # Use a test port
 
-    # Define headers and bits to use (4 bits from each header)
+    # Define headers and bits to use
     headers_to_use = ['ipid', 'ttl', 'window', 'tcp_options', 'ip_options', 'user_agent']
+    
+    # Currently using 8 bits for all headers, and not using tcp_reserved, should be easy to configure to test IDS
     header_bit_fields = [(header, 8) for header in headers_to_use]
 
     # Start the decoder in a separate thread
