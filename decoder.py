@@ -16,13 +16,12 @@ def read_config():
                 port = int(line.strip().split(':')[1].strip())
     return config, port
 
-
 # Global variables to store the accumulated binary message
 binary_message = ""
 bit_accumulator = ""
 
 def packet_handler(pkt):
-    global binary_message, bit_accumulator
+    global binary_message, bit_accumulator, header_bit_fields
     if IP in pkt and TCP in pkt:
         data_bits = ""
         # Extract bits based on headers specified in config
@@ -89,7 +88,8 @@ def packet_handler(pkt):
             except ValueError:
                 continue
 
-if __name__ == "__main__":
+def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None):
+    global header_bit_fields, bit_accumulator, binary_message
     # Read configuration from config.txt
     config, port = read_config()
     header_bit_fields = []
@@ -99,10 +99,19 @@ if __name__ == "__main__":
     print("Configuration loaded:")
     for header, bits in header_bit_fields:
         print(f"Header: {header}, Bits: {bits}")
-    print(f"Total bits per packet: {total_bits_per_packet}\n")
+    print(f"Total bits per packet: {total_bits_per_packet}")
+    print(f"Listening on port: {port}\n")
     print("Decoding messages... Press Ctrl+C to stop.")
+
+    # Build the sniff filter if not provided
+    if sniff_filter is None:
+        sniff_filter = f"tcp port {port}"
+
     try:
         # Start sniffing packets and process each packet with packet_handler
-        sniff(filter=f"tcp port {port}", prn=packet_handler, store=0)
+        sniff(filter=sniff_filter, prn=packet_handler, store=0, timeout=timeout)
     except KeyboardInterrupt:
         print("\nSniffing stopped by user.")
+
+if __name__ == "__main__":
+    start_decoder()

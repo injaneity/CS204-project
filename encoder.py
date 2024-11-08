@@ -1,4 +1,5 @@
 from scapy.all import IP, TCP, IPOption, send, Raw
+import stego_utils
 import random
 import noise
 import time
@@ -24,120 +25,9 @@ def split_into_chunks(data, chunk_size=8):
     """Split binary data into chunks of specified size."""
     return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
 
-def embed_in_ipid(packet, bits, num_bits):
-    """Embed num_bits into the IPID field."""
-    original_ipid = packet[IP].id
-    mask = (1 << (16 - num_bits)) - 1  # Mask to keep upper bits
-    new_ipid = (original_ipid & (mask << num_bits)) | int(bits, 2)
-    packet[IP].id = new_ipid
-    return packet
-
-def embed_in_ttl(packet, bits, num_bits):
-    """Embed num_bits into the TTL field."""
-    original_ttl = packet[IP].ttl
-    mask = (1 << (8 - num_bits)) - 1  # Mask to keep upper bits
-    new_ttl = (original_ttl & (mask << num_bits)) | int(bits, 2)
-    packet[IP].ttl = new_ttl
-    return packet
-
-def embed_in_window(packet, bits, num_bits):
-    """Embed num_bits into the TCP Window Size."""
-    original_window = packet[TCP].window
-    mask = (1 << (16 - num_bits)) - 1  # Mask to keep upper bits
-    new_window = (original_window & (mask << num_bits)) | int(bits, 2)
-    packet[TCP].window = new_window
-    return packet
-
-def embed_in_tcp_reserved(packet, bits, num_bits):
-    """Embed num_bits into the TCP Reserved field."""
-    original_reserved = packet[TCP].reserved
-    mask = (1 << (4 - num_bits)) - 1  # Mask to keep upper bits
-    new_reserved = (original_reserved & (mask << num_bits)) | int(bits, 2)
-    packet[TCP].reserved = new_reserved
-    return packet
-
-def embed_in_tcp_options(packet, bits, num_bits):
-    """Embed num_bits into TCP Options field."""
-    num_bytes = (num_bits + 7) // 8  # Convert bits to bytes
-    data_bytes = int(bits, 2).to_bytes(num_bytes, byteorder='big')
-    option_kind = 254  # Experimental option kind
-    option_data = data_bytes
-    option = (option_kind, option_data)
-    if 'options' in packet[TCP].fields:
-        packet[TCP].options.append(option)
-    else:
-        packet[TCP].options = [option]
-    return packet
-
-def embed_in_ip_options(packet, bits, num_bits):
-    """Embed num_bits into IP Options field."""
-    num_bytes = (num_bits + 7) // 8  # Convert bits to bytes
-    data_bytes = int(bits, 2).to_bytes(num_bytes, byteorder='big')
-    option_number = 30  # Experimental option number
-    
-    # Define length: 2 bytes for type + length fields, plus the length of data_bytes
-    length = 2 + len(data_bytes)
-    
-    # Create the IP option with all necessary fields
-    option = IPOption(copy_flag=1, optclass=0, option=option_number, length=length, value=data_bytes)
-    
-    # Append the option to packet's IP options
-    if 'options' in packet[IP].fields:
-        packet[IP].options.append(option)
-    else:
-        packet[IP].options = [option]
-        
-    return packet
-
-def embed_in_user_agent(packet, bits, num_bits):
-    """Embed num_bits into the HTTP User-Agent Header."""
-    if Raw in packet:
-        try:
-            payload = packet[Raw].load.decode()
-            if "User-Agent: " in payload:
-                parts = payload.split("User-Agent: ")
-                user_agent = parts[1].split("\r\n")[0]
-                # Modify the last character or extend the User-Agent string
-                user_agent_binary = ''.join(format(ord(c), '08b') for c in user_agent)
-                # Replace the last num_bits
-                user_agent_binary = user_agent_binary[:-num_bits] + bits
-                # Convert back to string
-                new_user_agent = ''.join(chr(int(user_agent_binary[i:i+8], 2)) for i in range(0, len(user_agent_binary), 8))
-                new_payload = parts[0] + "User-Agent: " + new_user_agent + "\r\n" + "\r\n".join(parts[1].split("\r\n")[1:])
-                packet[Raw].load = new_payload.encode()
-        except Exception as e:
-            print(f"Error embedding in User-Agent: {e}")
-    return packet
-
-def embed_data_into_packet(packet, data_bits, header_bit_fields):
-    """Embed data bits into specified packet fields."""
-    bit_index = 0
-    for header, num_bits in header_bit_fields:
-        bits_to_embed = data_bits[bit_index:bit_index+num_bits]
-        if len(bits_to_embed) < num_bits:
-            bits_to_embed = bits_to_embed.ljust(num_bits, '0')
-        if header == 'ipid':
-            packet = embed_in_ipid(packet, bits_to_embed, num_bits)
-        elif header == 'ttl':
-            packet = embed_in_ttl(packet, bits_to_embed, num_bits)
-        elif header == 'window':
-            packet = embed_in_window(packet, bits_to_embed, num_bits)
-        elif header == 'tcp_reserved':
-            packet = embed_in_tcp_reserved(packet, bits_to_embed, num_bits)
-        elif header == 'tcp_options':
-            packet = embed_in_tcp_options(packet, bits_to_embed, num_bits)
-        elif header == 'ip_options':
-            packet = embed_in_ip_options(packet, bits_to_embed, num_bits)
-        elif header == 'user_agent':
-            packet = embed_in_user_agent(packet, bits_to_embed, num_bits)
-        else:
-            print(f"Unknown header: {header}")
-        bit_index += num_bits
-    return packet
-
 def embed_with_noise(packet, data_bits, header_bit_fields, noise_type, noise_level, add_noise):
     """Embed data with customizable noise for better stealth."""
-    packet = embed_data_into_packet(packet, data_bits, header_bit_fields)
+    packet = stego_utils.embed_data_into_packet(packet, data_bits, header_bit_fields)
 
     if add_noise:
         if noise_type == 'random_padding':
@@ -169,9 +59,6 @@ def send_covert_message(destination_ip, destination_port, message, header_bit_fi
 
         # Call embed_with_noise from the noise module
         pkt = noise.embed_with_noise(pkt, chunk, header_bit_fields, noise_type, noise_level, add_noise)
-        print("Chunk:")
-        print(chunk)
-        print(pkt.summary())
         send(pkt, verbose=0)
 
 def start_noise_generation(destination_ip, destination_port, server=False):
@@ -211,63 +98,82 @@ def get_user_configuration():
         exit()
     return selected_headers
 
-def main():
-    # Prompt for destination IP and port
-    destination_ip = input("Enter destination IP address: ")
-    destination_port = int(input("Enter destination port number: "))
+def start_encoder(destination_ip=None, destination_port=None, selected_headers=None, use_noise=None, messages=None):
+    # Prompt for destination IP and port if not provided
+    if destination_ip is None:
+        destination_ip = input("Enter destination IP address: ")
+    if destination_port is None:
+        destination_port = int(input("Enter destination port number: "))
     
-    # Get user configuration for embedding
-    selected_headers = get_user_configuration()
-    header_bit_fields = []
-    for header, bits in selected_headers.items():
-        header_bit_fields.append((header, bits))
-    total_bits_per_packet = sum(bits for header, bits in selected_headers.items())
+    # Get user configuration for embedding if not provided
+    if selected_headers is None:
+        selected_headers = get_user_configuration()
+        header_bit_fields = []
+        for header, bits in selected_headers.items():
+            header_bit_fields.append((header, bits))
+    else:
+        header_bit_fields = selected_headers  # Assuming it's already a list of tuples
+        selected_headers = dict(header_bit_fields)  # Convert to dict for saving config
+    
+    total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
     
     # Output configuration
     print("\nConfiguration:")
-    for header, bits in selected_headers.items():
+    for header, bits in header_bit_fields:
         print(f"Header: {header}, Bits: {bits}")
     print(f"Total bits per packet: {total_bits_per_packet}\n")
     # Save configuration to a file
     with open('config.txt', 'w') as f:
         f.write("Configuration:\n")
-        for header, bits in selected_headers.items():
+        for header, bits in header_bit_fields:
             f.write(f"Header: {header}, Bits: {bits}\n")
         f.write(f"Total bits per packet: {total_bits_per_packet}\n")
-        # **Add this line to save the port number**
         f.write(f"Port: {destination_port}\n")
     
-    # Ask if the user wants to add noise at the start
-    use_noise = input("Do you want to add noise? (yes/no): ").lower() == 'yes'
-
+    # Ask if the user wants to add noise at the start if not provided
+    if use_noise is None:
+        use_noise = input("Do you want to add noise? (yes/no): ").lower() == 'yes'
+    
     if use_noise:
-        # If the user wants to add noise, ask for noise settings
-        noise_type = input("Enter noise type ('random_padding', 'delay', 'none'): ")
-        noise_level = int(input("Enter noise level (integer value): "))
-        add_noise = input("Add noise to each packet? (yes/no): ").lower() == 'yes'
-        start_noise = input("Start background noise generation? (yes/no): ").lower() == 'yes'
-        if start_noise:
-            noise_server = input("Start noise as server? (yes/no): ").lower() == 'yes'
-            # Start noise generation in a separate thread
-            # Use noise.start_noise_generation from the noise module
-            noise_thread = threading.Thread(target=noise.start_noise_generation, args=(destination_ip, destination_port, noise_server))
-            noise_thread.daemon = True
-            noise_thread.start()
-            print("Background noise generation started.")
+        # If the user wants to add noise, ask for noise settings if not provided
+        if messages is None:
+            noise_type = input("Enter noise type ('random_padding', 'delay', 'none'): ")
+            noise_level = int(input("Enter noise level (integer value): "))
+            add_noise = input("Add noise to each packet? (yes/no): ").lower() == 'yes'
+            start_noise = input("Start background noise generation? (yes/no): ").lower() == 'yes'
+            if start_noise:
+                noise_server = input("Start noise as server? (yes/no): ").lower() == 'yes'
+                # Start noise generation in a separate thread
+                noise_thread = threading.Thread(target=noise.start_noise_generation, args=(destination_ip, destination_port, noise_server))
+                noise_thread.daemon = True
+                noise_thread.start()
+                print("Background noise generation started.")
+        else:
+            # Set default noise parameters or use provided ones
+            noise_type = 'random_padding'
+            noise_level = 5
+            add_noise = True
     else:
         # Set default values for noise parameters
         noise_type = 'none'
         noise_level = 0
         add_noise = False
-
+    
     # Message input loop
-    while True:
-        message = input("Enter covert message (or 'exit' to quit): ")
-        if message.lower() == 'exit':
-            print("Exiting.")
-            break
-        send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
-        print("Message sent successfully.\n")
+    if messages is None:
+        while True:
+            message = input("Enter covert message (or 'exit' to quit): ")
+            if message.lower() == 'exit':
+                print("Exiting.")
+                break
+            send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
+            print("Message sent successfully.\n")
+    else:
+        # Send provided messages
+        for message in messages:
+            send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
+            print(f"Message '{message}' sent successfully.\n")
+
 
 if __name__ == "__main__":
-    main()
+    start_encoder()

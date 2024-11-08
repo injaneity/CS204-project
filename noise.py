@@ -1,7 +1,7 @@
 import threading
 import time
 import random
-from encoder import embed_data_into_packet
+import stego_utils
 from scapy.all import *
 
 def start_noise_generation(destination_ip, destination_port, server=False):
@@ -21,7 +21,7 @@ def start_noise_generation(destination_ip, destination_port, server=False):
 
 def embed_with_noise(packet, data_bits, header_bit_fields, noise_type, noise_level, add_noise):
     """Embed data with customizable noise for better stealth."""
-    packet = embed_data_into_packet(packet, data_bits, header_bit_fields)
+    packet = stego_utils.embed_data_into_packet(packet, data_bits, header_bit_fields)
     
     if add_noise:
         if noise_type == 'random_padding':
