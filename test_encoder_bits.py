@@ -62,7 +62,7 @@ def main():
             )
 
             # Give some time for the messages to be processed
-            time.sleep(2)
+            time.sleep(5)
 
             print("\nEvaluation completed.")
 
