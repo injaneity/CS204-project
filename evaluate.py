@@ -6,6 +6,22 @@ import string
 import encoder
 import decoder
 
+def save_to_config(destination_ip, destination_port, header_bit_fields):
+    total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
+    # Output configuration
+    print("\nConfiguration saved:")
+    for header, bits in header_bit_fields:
+        print(f"Header: {header}, Bits: {bits}")
+    print(f"Total bits per packet: {total_bits_per_packet}\n")
+    # Save configuration to a file
+    with open('config.txt', 'w') as f:
+        f.write("Configuration:\n")
+        for header, bits in header_bit_fields:
+            f.write(f"Header: {header}, Bits: {bits}\n")
+        f.write(f"Total bits per packet: {total_bits_per_packet}\n")
+        f.write(f"Port: {destination_port}\n")
+        f.write(f"Destination IP: {destination_ip}\n")
+
 def generate_random_message(length=10):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
@@ -25,12 +41,25 @@ def main():
     destination_ip = '192.168.1.100'  # Use localhost for testing
     destination_port = 80      # Use a test port
 
-    # Define headers and bits to use
-    headers_to_use = ['ipid', 'ttl', 'window', 'tcp_options', 'ip_options', 'user_agent']
-    
-    # Currently using 8 bits for all headers, and not using tcp_reserved, should be easy to configure to test IDS
-    header_bit_fields = [(header, 8) for header in headers_to_use]
+    # Sum must be multiple of 8
+    header_bit_fields = [
+        ('ipid', 1),            # Up to 16 bits
+        ('ttl', 2),             # Up to 8 bits
+        ('window', 16),         # Up to 16 bits
+        ('tcp_reserved', 3),    # Up to 4 bits
+        ('tcp_options', 4),     # Up to 320 bits
+        ('ip_options', 7),      # Up to 320 bits
+        ('user_agent', 7),      # Up to 8 bits
+    ]
 
+    save_to_config(destination_ip, destination_port, header_bit_fields)
+    # Generate random messages to send
+    messages = [generate_random_message(50) for _ in range(2)]
+    
+    for i, message in enumerate(messages):
+        print(f"Message {i + 1}: {message}")
+    print()
+    
     # Start the decoder in a separate thread
     decoder_thread = threading.Thread(target=decoder.start_decoder)
     decoder_thread.daemon = True
@@ -39,14 +68,11 @@ def main():
     # Give the decoder some time to start
     time.sleep(2)
 
-    # Generate random messages to send
-    messages = [generate_random_message(10) for _ in range(5)]
+
 
     # Run the encoder with the specified settings and messages
     encoder.start_encoder(
-        destination_ip=destination_ip,
-        destination_port=destination_port,
-        selected_headers=header_bit_fields,
+        load_config=True,
         use_noise=False,
         messages=messages
     )
