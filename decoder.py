@@ -4,9 +4,10 @@ from stego_utils import read_config
 # Global variables to store the accumulated binary message
 binary_message = ""
 bit_accumulator = ""
+callback_global = None
 
 def packet_handler(pkt):
-    global binary_message, bit_accumulator, header_bit_fields
+    global binary_message, bit_accumulator, header_bit_fields, callback_global
     if IP in pkt and TCP in pkt:
         data_bits = ""
         # Extract bits based on headers specified in config
@@ -69,12 +70,15 @@ def packet_handler(pkt):
             bit_accumulator = bit_accumulator[8:]
             try:
                 char = chr(int(byte_bits, 2))
+                if callback_global:
+                    callback_global(char)
                 print(char, end='', flush=True)
             except ValueError:
                 continue
 
-def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None):
-    global header_bit_fields, bit_accumulator, binary_message
+def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None, callback=None):
+    global header_bit_fields, bit_accumulator, binary_message, callback_global
+    callback_global = callback
     # Read configuration from config.txt
     config, port, _ = read_config()
     header_bit_fields = []

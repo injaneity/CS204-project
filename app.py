@@ -127,8 +127,11 @@ class SteganographyApp(QMainWindow):
         message = self.message_input.toPlainText()
         message_bits = len(message) * 8
 
-        if message_bits > total_bits+100000:
-            self.status_label.setText(f"Warning: Message too long ({message_bits} bits) for selected headers ({total_bits} bits)")
+        # if message_bits > total_bits+100000:
+        #     self.status_label.setText(f"Warning: Message too long ({message_bits} bits) for selected headers ({total_bits} bits)")
+        #     self.send_button.setEnabled(False)
+        if (total_bits % 8 != 0):
+            self.status_label.setText(f"Warning: Total number of bits must be a multiple of 8 ({total_bits} bits)")
             self.send_button.setEnabled(False)
         elif not self.is_valid_ip(self.ip_input.text()) or not self.is_valid_port(self.port_input.text()):
             self.status_label.setText("Invalid IP address or port")
