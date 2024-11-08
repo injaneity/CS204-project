@@ -9,14 +9,25 @@ import decoder
 def generate_random_message(length=10):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
+# For reference
+headers_info = {
+    'ipid': {'max_bits': 16},
+    'ttl': {'max_bits': 8},
+    'window': {'max_bits': 16},
+    'tcp_reserved': {'max_bits': 4},
+    'tcp_options': {'max_bits': 320},  # Up to 40 bytes
+    'ip_options': {'max_bits': 320},   # Up to 40 bytes
+    'user_agent': {'max_bits': 8},     # Modifiable within the constraints
+}
+
 def main():
     # Define the destination IP and port
-    destination_ip = '127.0.0.1'  # Use localhost for testing
-    destination_port = 12345      # Use a test port
+    destination_ip = '192.168.1.100'  # Use localhost for testing
+    destination_port = 80      # Use a test port
 
     # Define headers and bits to use (4 bits from each header)
-    headers_to_use = ['ipid', 'ttl', 'window', 'tcp_reserved']
-    header_bit_fields = [(header, 4) for header in headers_to_use]
+    headers_to_use = ['ipid', 'ttl', 'window', 'tcp_options', 'ip_options', 'user_agent']
+    header_bit_fields = [(header, 8) for header in headers_to_use]
 
     # Start the decoder in a separate thread
     decoder_thread = threading.Thread(target=decoder.start_decoder)

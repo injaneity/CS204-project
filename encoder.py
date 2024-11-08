@@ -169,10 +169,13 @@ def start_encoder(destination_ip=None, destination_port=None, selected_headers=N
             send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
             print("Message sent successfully.\n")
     else:
+        # Print messages before sending
+        for message in messages:
+            print(f"Sending: '{message}' in one packet.")
+        print()
         # Send provided messages
         for message in messages:
             send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
-            print(f"Message '{message}' sent successfully.\n")
 
 
 if __name__ == "__main__":
