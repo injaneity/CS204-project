@@ -1,4 +1,5 @@
 from scapy.all import IP, TCP, IPOption, send, Raw
+from stego_utils import read_config
 import stego_utils
 import random
 import noise
@@ -24,21 +25,6 @@ def encode_message(message):
 def split_into_chunks(data, chunk_size=8):
     """Split binary data into chunks of specified size."""
     return [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
-
-def embed_with_noise(packet, data_bits, header_bit_fields, noise_type, noise_level, add_noise):
-    """Embed data with customizable noise for better stealth."""
-    packet = stego_utils.embed_data_into_packet(packet, data_bits, header_bit_fields)
-
-    if add_noise:
-        if noise_type == 'random_padding':
-            random_padding = ''.join(random.choices(['A', 'B', 'C', 'D'], k=random.randint(0, noise_level)))
-            if Raw in packet:
-                packet[Raw].load += random_padding.encode()
-        elif noise_type == 'delay':
-            delay = random.uniform(0.05, 0.2) * noise_level
-            time.sleep(delay)
-
-    return packet
 
 def send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise):
     """Send a covert message to the destination IP and port."""
@@ -98,37 +84,24 @@ def get_user_configuration():
         exit()
     return selected_headers
 
-def start_encoder(destination_ip=None, destination_port=None, selected_headers=None, use_noise=None, messages=None):
-    # Prompt for destination IP and port if not provided
-    if destination_ip is None:
+def start_encoder(load_config=False, use_noise=None, messages=None):
+    if load_config:
+        config, destination_port, destination_ip = read_config()
+        header_bit_fields = []
+        for header, bits in config.items():
+            header_bit_fields.append((header, bits))
+        print("Configuration loaded in encoder.")
+    else:
+        # Prompt for destination IP and port if not provided
         destination_ip = input("Enter destination IP address: ")
-    if destination_port is None:
         destination_port = int(input("Enter destination port number: "))
     
-    # Get user configuration for embedding if not provided
-    if selected_headers is None:
+        # Get user configuration for embedding if not provided
         selected_headers = get_user_configuration()
         header_bit_fields = []
         for header, bits in selected_headers.items():
             header_bit_fields.append((header, bits))
-    else:
-        header_bit_fields = selected_headers  # Assuming it's already a list of tuples
-        selected_headers = dict(header_bit_fields)  # Convert to dict for saving config
     
-    total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
-    
-    # Output configuration
-    print("\nConfiguration:")
-    for header, bits in header_bit_fields:
-        print(f"Header: {header}, Bits: {bits}")
-    print(f"Total bits per packet: {total_bits_per_packet}\n")
-    # Save configuration to a file
-    with open('config.txt', 'w') as f:
-        f.write("Configuration:\n")
-        for header, bits in header_bit_fields:
-            f.write(f"Header: {header}, Bits: {bits}\n")
-        f.write(f"Total bits per packet: {total_bits_per_packet}\n")
-        f.write(f"Port: {destination_port}\n")
     
     # Ask if the user wants to add noise at the start if not provided
     if use_noise is None:
@@ -169,10 +142,6 @@ def start_encoder(destination_ip=None, destination_port=None, selected_headers=N
             send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)
             print("Message sent successfully.\n")
     else:
-        # Print messages before sending
-        for message in messages:
-            print(f"Sending: '{message}' in one packet.")
-        print()
         # Send provided messages
         for message in messages:
             send_covert_message(destination_ip, destination_port, message, header_bit_fields, noise_type, noise_level, add_noise)

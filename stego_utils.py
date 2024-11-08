@@ -111,3 +111,21 @@ def embed_data_into_packet(packet, data_bits, header_bit_fields):
             print(f"Unknown header: {header}")
         bit_index += num_bits
     return packet
+
+def read_config():
+    """Read the config.txt file and return header configurations and port."""
+    config = {}
+    port = None
+    with open('config.txt', 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith('Header:'):
+                parts = line.strip().split(',')
+                header = parts[0].split(':')[1].strip()
+                bits = int(parts[1].split(':')[1].strip())
+                config[header] = bits
+            elif line.startswith('Port:'):
+                port = int(line.strip().split(':')[1].strip())
+            elif line.startswith('Destination IP:'):
+                destination_ip = line.strip().split(':')[1].strip()
+    return config, port, destination_ip

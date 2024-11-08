@@ -1,20 +1,5 @@
 from scapy.all import IP, TCP, IPOption, sniff, Raw
-
-def read_config():
-    """Read the config.txt file and return header configurations and port."""
-    config = {}
-    port = None
-    with open('config.txt', 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            if line.startswith('Header:'):
-                parts = line.strip().split(',')
-                header = parts[0].split(':')[1].strip()
-                bits = int(parts[1].split(':')[1].strip())
-                config[header] = bits
-            elif line.startswith('Port:'):
-                port = int(line.strip().split(':')[1].strip())
-    return config, port
+from stego_utils import read_config
 
 # Global variables to store the accumulated binary message
 binary_message = ""
@@ -47,7 +32,7 @@ def packet_handler(pkt):
                         # Convert the option data bytes to bits
                         option_data_bits = ''.join(format(byte, '08b') for byte in option_data)
                         # Truncate to the specified number of bits
-                        option_data_bits = option_data_bits[:num_bits]
+                        option_data_bits = option_data_bits[-num_bits:]
                         data_bits += option_data_bits
                         break  # Exit after finding the option data
             elif header == 'ip_options':
@@ -57,7 +42,7 @@ def packet_handler(pkt):
                     if isinstance(opt, IPOption) and opt.option == 30:  # Our experimental option number
                         option_data = opt.value
                         option_data_bits = ''.join(format(byte, '08b') for byte in option_data)
-                        option_data_bits = option_data_bits[:num_bits]
+                        option_data_bits = option_data_bits[-num_bits:]
                         data_bits += option_data_bits
                         break
             elif header == 'user_agent':
@@ -91,15 +76,15 @@ def packet_handler(pkt):
 def start_decoder(config_file='config.txt', sniff_filter=None, timeout=None):
     global header_bit_fields, bit_accumulator, binary_message
     # Read configuration from config.txt
-    config, port = read_config()
+    config, port, _ = read_config()
     header_bit_fields = []
     for header, bits in config.items():
         header_bit_fields.append((header, bits))
     total_bits_per_packet = sum(bits for header, bits in header_bit_fields)
-    print("Configuration loaded:")
-    for header, bits in header_bit_fields:
-        print(f"Header: {header}, Bits: {bits}")
-    print(f"Total bits per packet: {total_bits_per_packet}")
+    print("Configuration loaded in decoder.")
+    # for header, bits in header_bit_fields:
+    #     print(f"Header: {header}, Bits: {bits}")
+    # print(f"Total bits per packet: {total_bits_per_packet}")
     print(f"Listening on port: {port}\n")
     print("Decoding messages... Press Ctrl+C to stop.")
 
