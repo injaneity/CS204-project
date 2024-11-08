@@ -54,7 +54,7 @@ def main(x):
 
     save_to_config(destination_ip, destination_port, header_bit_fields)
     # Generate random messages to send
-    messages = [generate_random_message(x) for _ in range(2)]
+    messages = [generate_random_message(x) for _ in range(1)]
     
     for i, message in enumerate(messages):
         print(f"Message {i + 1}: {message}")
@@ -66,7 +66,7 @@ def main(x):
     decoder_thread.start()
 
     # Give the decoder some time to start
-    time.sleep(2)
+    time.sleep(1)
 
 
     # Run the encoder with the specified settings and messages
@@ -77,7 +77,7 @@ def main(x):
     )
 
     # Give some time for the messages to be processed
-    time.sleep(2)
+    time.sleep(5)
 
     print("\nEvaluation completed.")
 
