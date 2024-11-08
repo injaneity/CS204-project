@@ -36,25 +36,25 @@ headers_info = {
     'user_agent': {'max_bits': 8},     # Modifiable within the constraints
 }
 
-def main():
+def main(x):
     # Define the destination IP and port
     destination_ip = '192.168.1.100'  # Use localhost for testing
     destination_port = 80      # Use a test port
 
     # Sum must be multiple of 8
     header_bit_fields = [
-        ('ipid', 1),            # Up to 16 bits
+        ('ipid', 2),            # Up to 16 bits
         ('ttl', 2),             # Up to 8 bits
-        ('window', 16),         # Up to 16 bits
-        ('tcp_reserved', 3),    # Up to 4 bits
-        ('tcp_options', 4),     # Up to 320 bits
-        ('ip_options', 7),      # Up to 320 bits
-        ('user_agent', 7),      # Up to 8 bits
+        ('window', 2),         # Up to 16 bits
+        # ('tcp_reserved', 2),    # Up to 4 bits
+        # ('tcp_options', 2),     # Up to 320 bits
+        # ('ip_options', 2),      # Up to 320 bits
+        ('user_agent', 2),      # Up to 8 bits
     ]
 
     save_to_config(destination_ip, destination_port, header_bit_fields)
     # Generate random messages to send
-    messages = [generate_random_message(50) for _ in range(2)]
+    messages = [generate_random_message(x) for _ in range(2)]
     
     for i, message in enumerate(messages):
         print(f"Message {i + 1}: {message}")
@@ -69,7 +69,6 @@ def main():
     time.sleep(2)
 
 
-
     # Run the encoder with the specified settings and messages
     encoder.start_encoder(
         load_config=True,
@@ -78,9 +77,11 @@ def main():
     )
 
     # Give some time for the messages to be processed
-    time.sleep(5)
+    time.sleep(2)
 
     print("\nEvaluation completed.")
 
 if __name__ == '__main__':
-    main()
+    # Call main() with a specific message length, e.g., 5
+    for i in range(100):
+        main(i)
