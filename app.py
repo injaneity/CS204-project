@@ -9,6 +9,7 @@ from PyQt5.QtCore import Qt, QRect
 # Import your backend modules
 import encoder
 import decoder
+import evaluate
 
 class PacketVisualization(QWidget):
     def __init__(self, parent=None):
@@ -29,7 +30,7 @@ class PacketVisualization(QWidget):
         y = 20
         for header, bits in self.selected_headers.items():
             if bits > 0:
-                height = (bits / 320) * total_height  # Normalize to max 320 bits
+                height = int((bits / 320) * total_height)  # Normalize to max 320 bits
                 rect = QRect(20, y, self.width() - 40, height)
                 painter.fillRect(rect, QColor(100, 200, 100, 100))
                 painter.drawRect(rect)
@@ -156,17 +157,22 @@ class SteganographyApp(QMainWindow):
             destination_ip = self.ip_input.text()
             destination_port = int(self.port_input.text())
 
-            selected_headers = {}
+            selected_headers = []
             for header, checkbox in self.header_checkboxes.items():
                 if checkbox.isChecked():
-                    selected_headers[header] = self.header_spinboxes[header].value()
+                    selected_headers.append((header, self.header_spinboxes[header].value()))
 
             # Here you would call your encoder function
             # For demonstration, we'll just print the values
             print(f"Encoding message: {message}")
             print(f"Using headers: {selected_headers}")
             print(f"Sending to: {destination_ip}:{destination_port}")
-            encoder.start_encoder(destination_ip, destination_port, selected_headers, messages=[message])
+            evaluate.save_to_config(destination_ip, destination_port, selected_headers)
+            # encoder.start_encoder(
+            #     load_config=True,
+            #     use_noise=False,
+            #     messages=[message]
+            # )
 
             # Simulate sending
             # In a real scenario, you would call your encoder and sending functions here
