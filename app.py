@@ -127,7 +127,7 @@ class SteganographyApp(QMainWindow):
         message = self.message_input.toPlainText()
         message_bits = len(message) * 8
 
-        if message_bits > total_bits:
+        if message_bits > total_bits+100000:
             self.status_label.setText(f"Warning: Message too long ({message_bits} bits) for selected headers ({total_bits} bits)")
             self.send_button.setEnabled(False)
         elif not self.is_valid_ip(self.ip_input.text()) or not self.is_valid_port(self.port_input.text()):
@@ -168,11 +168,11 @@ class SteganographyApp(QMainWindow):
             print(f"Using headers: {selected_headers}")
             print(f"Sending to: {destination_ip}:{destination_port}")
             evaluate.save_to_config(destination_ip, destination_port, selected_headers)
-            # encoder.start_encoder(
-            #     load_config=True,
-            #     use_noise=False,
-            #     messages=[message]
-            # )
+            encoder.start_encoder(
+                load_config=True,
+                use_noise=False,
+                messages=[message]
+            )
 
             # Simulate sending
             # In a real scenario, you would call your encoder and sending functions here
