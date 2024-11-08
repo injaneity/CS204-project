@@ -63,10 +63,11 @@ def simulate_background_noise(destination_ip, destination_port):
 
     for _ in range(num_threads):
         t1 = threading.Thread(target=generate_random_http_traffic, args=(destination_ip, destination_port))
-        t2 = threading.Thread(target=generate_random_tcp_connections, args=(destination_ip, destination_port))
+        # t2 = threading.Thread(target=generate_random_tcp_connections, args=(destination_ip, destination_port))
         t1.daemon = True
-        t2.daemon = True
-        threads.extend([t1, t2])
+        # t2.daemon = True
+        # threads.extend([t1, t2])
+        threads.extend([t1])
 
     for t in threads:
         t.start()

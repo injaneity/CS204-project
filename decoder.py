@@ -14,6 +14,8 @@ def decode_covert_message(packets):
             if Raw in pkt:
                 try:
                     payload = pkt[Raw].load.decode()
+                    if "AN21NY" not in payload:
+                        continue
                     if "User-Agent: " in payload:
                         parts = payload.split("User-Agent: ")
                         user_agent = parts[1].split("\r\n")[0]

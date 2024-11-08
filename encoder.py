@@ -92,7 +92,8 @@ def send_covert_message(destination_ip, destination_port, message, encoding_fiel
         
         ip = IP(dst=destination_ip)
         tcp = TCP(sport=random.randint(1024, 65535), dport=destination_port, flags='S', window=1024)
-        http_payload = f"GET / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
+        unique_identifier = "AN21NY "
+        http_payload = f"GET / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: Mozilla/5.0 {unique_identifier}\r\n\r\n"
         pkt = ip / tcp / Raw(load=http_payload)
         
         pkt = embed_with_noise(pkt, chunk, noise_type, noise_level, add_noise)
