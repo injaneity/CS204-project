@@ -47,7 +47,7 @@ def packet_handler(pkt):
                         # Convert the option data bytes to bits
                         option_data_bits = ''.join(format(byte, '08b') for byte in option_data)
                         # Truncate to the specified number of bits
-                        option_data_bits = option_data_bits[:num_bits]
+                        option_data_bits = option_data_bits[-num_bits:]
                         data_bits += option_data_bits
                         break  # Exit after finding the option data
             elif header == 'ip_options':
@@ -57,7 +57,7 @@ def packet_handler(pkt):
                     if isinstance(opt, IPOption) and opt.option == 30:  # Our experimental option number
                         option_data = opt.value
                         option_data_bits = ''.join(format(byte, '08b') for byte in option_data)
-                        option_data_bits = option_data_bits[:num_bits]
+                        option_data_bits = option_data_bits[-num_bits:]
                         data_bits += option_data_bits
                         break
             elif header == 'user_agent':
