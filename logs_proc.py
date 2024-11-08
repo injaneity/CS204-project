@@ -45,3 +45,6 @@ clusters.append(cluster_count)
 
 # Output the array of cluster counts
 print(clusters)
+
+# print size of clusters
+print(len(clusters))
