@@ -10,6 +10,7 @@ from scapy.all import sniff, IP, TCP
 from collections import defaultdict, deque
 import threading
 import datetime
+import network_noise_generator  # Import the noise generation module
 
 # Import your backend modules
 import encoder
@@ -103,6 +104,11 @@ class SteganographyApp(QMainWindow):
         dest_layout.addWidget(self.port_input)
         left_panel.addWidget(dest_group)
 
+        # Noise Generation Checkbox
+        self.noise_checkbox = QCheckBox("Enable Network Noise")
+        self.noise_checkbox.stateChanged.connect(self.toggle_network_noise)
+        left_panel.addWidget(self.noise_checkbox)
+
         # Send Button
         self.send_button = QPushButton("Send")
         self.send_button.clicked.connect(self.send_message)
@@ -135,6 +141,19 @@ class SteganographyApp(QMainWindow):
         self.monitor_thread = None
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(self.plot_packet_counts_over_time)
+
+    def toggle_network_noise(self):
+        """Start network noise generation when the checkbox is checked."""
+        destination_ip = self.ip_input.text()
+        destination_port = int(self.port_input.text())
+
+        if self.noise_checkbox.isChecked():
+            # Start generating noise when the checkbox is checked
+            network_noise_generator.start_noise(destination_ip, destination_port)
+            self.status_label.setText("Network noise generation started.")
+            print(f"Network noise generation started for {destination_ip}:{destination_port}")
+        else:
+            self.status_label.setText("Network noise checkbox unchecked.")
 
     def update_visualization(self):
         headers = {}
@@ -190,11 +209,9 @@ class SteganographyApp(QMainWindow):
             stego_utils.save_to_config(destination_ip, destination_port, selected_headers)
             encoder.start_encoder(
                 load_config=True,
-                use_noise=False,
+                use_noise=True,
                 messages=[message]
             )
-
-            #encoder.encode_and_send(message, selected_headers, destination_ip, destination_port)
 
             self.status_label.setText("Message sent successfully!")
             QMessageBox.information(self, "Success", "Message encoded and sent successfully!")
@@ -258,7 +275,6 @@ class SteganographyApp(QMainWindow):
         counts = [time_bins.get(time, 0) for time in full_time_range]
 
         self.show_graph_over_time(full_time_range, counts)
-
 
     def show_graph_over_time(self, times, counts):
         """Display the graph of packet counts over time using matplotlib."""
