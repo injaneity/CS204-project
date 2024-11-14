@@ -103,6 +103,20 @@ class SteganographyApp(QMainWindow):
         dest_layout.addWidget(QLabel("Destination Port:"))
         dest_layout.addWidget(self.port_input)
         left_panel.addWidget(dest_group)
+        
+        # Delay Controls
+        delay_group = QGroupBox("Delay Settings")
+        delay_layout = QVBoxLayout(delay_group)
+        self.delay_checkbox = QCheckBox("Enable Delay Between Packets")
+        self.delay_input = QSpinBox()
+        self.delay_input.setRange(1, 60)  # Set the range for delay (in seconds)
+        self.delay_input.setValue(1)  # Default delay value
+        self.delay_input.setEnabled(False)  # Disabled by default
+        self.delay_checkbox.stateChanged.connect(lambda state: self.delay_input.setEnabled(state == Qt.Checked))
+        delay_layout.addWidget(self.delay_checkbox)
+        delay_layout.addWidget(QLabel("Delay Period (seconds):"))
+        delay_layout.addWidget(self.delay_input)
+        left_panel.addWidget(delay_group)
 
         # Noise Generation Checkbox
         self.noise_checkbox = QCheckBox("Enable Network Noise")
@@ -208,10 +222,15 @@ class SteganographyApp(QMainWindow):
             print(f"Using headers: {selected_headers}")
             print(f"Sending to: {destination_ip}:{destination_port}")
             stego_utils.save_to_config(destination_ip, destination_port, selected_headers)
+
+            # Check if delay is enabled and get the delay value
+            delay = self.delay_input.value() if self.delay_checkbox.isChecked() else 0
+
             encoder.start_encoder(
                 load_config=True,
                 use_noise=True,
-                messages=[message]
+                messages=[message],
+                delay=delay  # Pass the delay value here
             )
 
             self.status_label.setText("Message sent successfully!")
@@ -219,6 +238,7 @@ class SteganographyApp(QMainWindow):
         except Exception as e:
             self.status_label.setText(f"Error: {str(e)}")
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+
 
     def packet_callback(self, packet):
         """Packet callback function to record timestamps of incoming packets."""
