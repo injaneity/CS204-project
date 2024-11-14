@@ -278,8 +278,7 @@ class SteganographyApp(QMainWindow):
 
     def show_graph_over_time(self, times, counts):
         """Display the graph of packet counts over time using matplotlib."""
-        plt.clf()
-        plt.figure(figsize=(12, 6))
+        plt.gcf().clear()  # Clears the current figure instead of creating a new one
         plt.plot(times, counts, marker='o', linestyle='-', color='blue')
         plt.xlabel('Time')
         plt.ylabel('Number of Packets')
@@ -288,6 +287,7 @@ class SteganographyApp(QMainWindow):
         plt.tight_layout()
         plt.grid(True)
         plt.pause(0.001)  # Allow for dynamic updates in real-time
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
