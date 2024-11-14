@@ -20,8 +20,8 @@ def packet_handler(pkt):
             return
         
         data_bits = ""
-        print("\n--- Debug Info ---")  # Start of debug information
-        print(f"Packet {packet_counter_global}: Source IP {pkt[IP].src}, Destination IP {pkt[IP].dst}")
+        # print("\n--- Debug Info ---")  # Start of debug information
+        # print(f"Packet {packet_counter_global}: Source IP {pkt[IP].src}, Destination IP {pkt[IP].dst}")
 
         total_bits = sum(num_bits for _, num_bits in header_bit_fields)
         

@@ -85,14 +85,7 @@ class SteganographyApp(QMainWindow):
             self.header_checkboxes[header] = checkbox
             self.header_spinboxes[header] = spinbox
         left_panel.addWidget(header_group)
-
-        # Message Input
-        message_group = QGroupBox("Message Input")
-        message_layout = QVBoxLayout(message_group)
-        self.message_input = QTextEdit()
-        message_layout.addWidget(self.message_input)
-        left_panel.addWidget(message_group)
-
+        
         # Destination Settings
         dest_group = QGroupBox("Destination Settings")
         dest_layout = QVBoxLayout(dest_group)
@@ -103,6 +96,18 @@ class SteganographyApp(QMainWindow):
         dest_layout.addWidget(QLabel("Destination Port:"))
         dest_layout.addWidget(self.port_input)
         left_panel.addWidget(dest_group)
+        
+        # Save Configurations Button
+        self.save_config_button = QPushButton("Save Configurations")
+        self.save_config_button.clicked.connect(self.save_configurations)
+        left_panel.addWidget(self.save_config_button)
+
+        # Message Input
+        message_group = QGroupBox("Message Input")
+        message_layout = QVBoxLayout(message_group)
+        self.message_input = QTextEdit()
+        message_layout.addWidget(self.message_input)
+        left_panel.addWidget(message_group)
         
         # Delay Controls
         delay_group = QGroupBox("Delay Settings")
@@ -155,6 +160,23 @@ class SteganographyApp(QMainWindow):
         self.monitor_thread = None
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(self.plot_packet_counts_over_time)
+
+    def save_configurations(self):
+        try:
+            selected_headers = []
+            for header, checkbox in self.header_checkboxes.items():
+                if checkbox.isChecked():
+                    selected_headers.append((header, self.header_spinboxes[header].value()))
+
+            destination_ip = self.ip_input.text()
+            destination_port = int(self.port_input.text())
+
+            stego_utils.save_to_config(destination_ip, destination_port, selected_headers)
+            QMessageBox.information(self, "Success", "Configurations saved successfully!")
+            self.status_label.setText("Configurations saved successfully!")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save configurations: {str(e)}")
+            self.status_label.setText(f"Error: {str(e)}")
 
     def toggle_network_noise(self):
         """Start network noise generation when the checkbox is checked."""
