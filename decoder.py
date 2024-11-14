@@ -12,6 +12,13 @@ packet_counter_global = 1
 def packet_handler(pkt):
     global binary_message, bit_accumulator, header_bit_fields, callback_global, verbose_global, str_accumulator, packet_counter_global
     if IP in pkt and TCP in pkt:
+        try: 
+            payload = pkt[Raw].load.decode()
+            if "AN21NY" not in payload:
+                return
+        except Exception as e:
+            return
+        
         data_bits = ""
         print("\n--- Debug Info ---")  # Start of debug information
         print(f"Packet {packet_counter_global}: Source IP {pkt[IP].src}, Destination IP {pkt[IP].dst}")
