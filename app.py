@@ -153,6 +153,7 @@ class SteganographyApp(QMainWindow):
             self.status_label.setText("Network noise generation started.")
             print(f"Network noise generation started for {destination_ip}:{destination_port}")
         else:
+            network_noise_generator.stop_noise()
             self.status_label.setText("Network noise checkbox unchecked.")
 
     def update_visualization(self):

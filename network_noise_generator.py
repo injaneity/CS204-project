@@ -28,6 +28,9 @@ def start_http_server(server_address=('0.0.0.0', 8080)):
     print(f"HTTP server running on {server_address[0]}:{server_address[1]}")
     httpd.serve_forever()
 
+stop_event = threading.Event()
+threads = []
+
 def generate_random_http_traffic(destination_ip, destination_port):
     """Generate random HTTP GET requests to simulate traffic."""
     http_methods = ['GET', 'POST', 'HEAD']
@@ -38,7 +41,7 @@ def generate_random_http_traffic(destination_ip, destination_port):
         'Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X)'
     ]
 
-    while True:
+    while not stop_event.is_set():
         ip = IP(dst=destination_ip)
         tcp = TCP(sport=random.randint(1024, 65535), dport=destination_port, flags='PA')
         http_payload = f"{random.choice(http_methods)} / HTTP/1.1\r\nHost: {destination_ip}\r\nUser-Agent: {random.choice(user_agents)}\r\n\r\n"
@@ -47,49 +50,49 @@ def generate_random_http_traffic(destination_ip, destination_port):
         send(pkt, verbose=0)
         time.sleep(random.uniform(0.1, 1.5))  # Add realistic delays between packets
 
-def generate_random_tcp_connections(destination_ip, destination_port):
-    """Generate random TCP connections to simulate network noise."""
-    while True:
-        ip = IP(dst=destination_ip)
-        tcp = TCP(sport=random.randint(1024, 65535), dport=destination_port, flags='S')
-        pkt = ip / tcp
-        send(pkt, verbose=0)
-        time.sleep(random.uniform(0.05, 0.3))  # Random delay to simulate varying traffic frequency
-
 def simulate_background_noise(destination_ip, destination_port):
     """Start multiple threads to generate background network noise."""
+    global threads
     num_threads = 5  # Number of traffic generation threads
-    threads = []
+
+    stop_event.clear()  # Ensure the event is cleared to allow the threads to run
 
     for _ in range(num_threads):
-        t1 = threading.Thread(target=generate_random_http_traffic, args=(destination_ip, destination_port))
-        # t2 = threading.Thread(target=generate_random_tcp_connections, args=(destination_ip, destination_port))
-        t1.daemon = True
-        # t2.daemon = True
-        # threads.extend([t1, t2])
-        threads.extend([t1])
+        t = threading.Thread(target=generate_random_http_traffic, args=(destination_ip, destination_port))
+        t.daemon = True
+        threads.append(t)
 
     for t in threads:
         t.start()
 
-    # Keep the main thread alive while noise is being generated
-    while True:
-        time.sleep(1)
+    print("Background noise generation started.")
 
 def start_noise(destination_ip, destination_port, server=False):
     """Start network noise generation, optionally with an HTTP server."""
     if server:
-        # Start the HTTP server in a separate thread
         server_thread = threading.Thread(target=start_http_server, args=(('0.0.0.0', destination_port),))
         server_thread.daemon = True
         server_thread.start()
         print("HTTP server started for noise generation.")
 
-    # Start background noise generation
-    noise_thread = threading.Thread(target=simulate_background_noise, args=(destination_ip, destination_port))
-    noise_thread.daemon = True
-    noise_thread.start()
-    print(f"Background noise generation started for {destination_ip}:{destination_port}")
+    simulate_background_noise(destination_ip, destination_port)
+
+def stop_noise():
+    """Stop all background noise generation."""
+    stop_event.set()
+    for t in threads:
+        t.join()  # Ensure all threads are stopped
+    threads.clear()  # Clear the list to allow restarting
+    print("Noise generation stopped.")
+
+def toggle_noise(destination_ip, destination_port):
+    """Toggle noise generation on or off."""
+    if stop_event.is_set():
+        print("Resuming noise generation...")
+        start_noise(destination_ip, destination_port)
+    else:
+        print("Pausing noise generation...")
+        stop_noise()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Background Network Noise Generator with HTTP Server")
@@ -99,11 +102,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.server:
-        # Start the HTTP server in a separate thread
         server_thread = threading.Thread(target=start_http_server, args=(('0.0.0.0', args.destination_port),))
         server_thread.daemon = True
         server_thread.start()
         print("HTTP server started for noise generation.")
 
     print(f"Starting background noise generation for {args.destination_ip}:{args.destination_port}")
-    simulate_background_noise(args.destination_ip, args.destination_port)
+    start_noise(args.destination_ip, args.destination_port)
+
+    try:
+        while True:
+            command = input("Enter 'toggle' to start/stop noise or 'exit' to quit: ").strip().lower()
+            if command == 'toggle':
+                toggle_noise(args.destination_ip, args.destination_port)
+            elif command == 'exit':
+                stop_noise()
+                break
+    except KeyboardInterrupt:
+        stop_noise()
