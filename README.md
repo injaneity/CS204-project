@@ -14,26 +14,38 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Run decoder (or host)
+2. Start Decoder App
 
 ```
-python3 decoder.py --port 80 --timeout 30
-```
-Note that packets are only shown in the CLI once the 30 seconds have timed out.
-
-3. Run encoder
-
-```
-python3 encoder.py 192.168.1.100 80 "your message"
-```
-You can send multiple messages in a given timeframe.
-
-4. Alternative Testing
-
-```
-chmod +x commands.sh
+python3 decoder_app.py
 ```
 
+- **DO NOT RUN IT YET!**
+
+3. Start Encoder App
+
 ```
-./commands.sh
+python3 encoder_app.py
 ```
+
+- Choose your header fields
+- Enable or disable packet delay with timer
+- Enable or disable network noise
+
+- **Insert your covert message**
+
+- Press Save Configurations
+
+4. Run Decoder App
+
+5. Run Encoder App
+
+- Press Start Monitoring Packets
+- Press Send!
+
+
+
+
+
+
+
