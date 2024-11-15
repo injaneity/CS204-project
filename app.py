@@ -76,6 +76,8 @@ class SteganographyApp(QMainWindow):
             spinbox.setRange(0, max_bits)
             spinbox.setSingleStep(8)
             spinbox.setEnabled(False)
+            spinbox.setToolTip(f"Maximum bits: {max_bits}")
+            checkbox.setToolTip(f"Select this field (Max bits: {max_bits})")
             checkbox.stateChanged.connect(lambda state, sb=spinbox: sb.setEnabled(state == Qt.Checked))
             checkbox.stateChanged.connect(self.update_visualization)
             spinbox.valueChanged.connect(self.update_visualization)
