@@ -10,12 +10,12 @@ from scapy.all import sniff, IP, TCP
 from collections import defaultdict, deque
 import threading
 import datetime
-import network_noise_generator  # Import the noise generation module
+import encoder.network_noise_generator as network_noise_generator  # Import the noise generation module
 
 # Import your backend modules
-import encoder
-import decoder
-import stego_utils
+import encoder.encoder as encoder
+import decoder.decoder as decoder
+import encoder.stego_utils as stego_utils
 
 class PacketVisualization(QWidget):
     def __init__(self, parent=None):
