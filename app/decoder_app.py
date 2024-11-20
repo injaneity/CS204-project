@@ -5,7 +5,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QTextCursor
 
 # Import your decoder module
-import decoder
+import decoder.decoder as decoder
 
 class DecoderThread(QThread):
     message_received = pyqtSignal(str)

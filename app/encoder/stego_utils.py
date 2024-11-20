@@ -138,7 +138,7 @@ def read_config():
     """Read the config.txt file and return header configurations and port."""
     config = {}
     port = None
-    with open('config.txt', 'r') as f:
+    with open('../config.txt', 'r') as f:
         lines = f.readlines()
         for line in lines:
             if line.startswith('Header:'):
@@ -160,7 +160,7 @@ def save_to_config(destination_ip, destination_port, header_bit_fields):
         print(f"Header: {header}, Bits: {bits}")
     print(f"Total bits per packet: {total_bits_per_packet}\n")
     # Save configuration to a file
-    with open('config.txt', 'w') as f:
+    with open('../config.txt', 'w') as f:
         f.write("Configuration:\n")
         for header, bits in header_bit_fields:
             f.write(f"Header: {header}, Bits: {bits}\n")

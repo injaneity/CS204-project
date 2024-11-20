@@ -10,12 +10,12 @@ from scapy.all import sniff, IP, TCP
 from collections import defaultdict, deque
 import threading
 import datetime
-import network_noise_generator  # Import the noise generation module
+import encoder.network_noise_generator as network_noise_generator  # Import the noise generation module
 
 # Import your backend modules
-import encoder
-import decoder
-import stego_utils
+import encoder.encoder as encoder
+import decoder.decoder as decoder
+import encoder.stego_utils as stego_utils
 
 class PacketVisualization(QWidget):
     def __init__(self, parent=None):
@@ -129,27 +129,11 @@ class SteganographyApp(QMainWindow):
         self.noise_checkbox = QCheckBox("Enable Network Noise")
         self.noise_checkbox.stateChanged.connect(self.toggle_network_noise)
         left_panel.addWidget(self.noise_checkbox)
-
-        # Send Button
-        self.send_button = QPushButton("Send")
-        self.send_button.clicked.connect(self.send_message)
-        left_panel.addWidget(self.send_button)
-
-        # Start/Stop Graph Button
-        self.start_graph_button = QPushButton("Start Monitoring Packets")
-        self.start_graph_button.clicked.connect(self.start_packet_monitoring)
-        left_panel.addWidget(self.start_graph_button)
-
-        # Stop Monitoring Button
-        self.stop_graph_button = QPushButton("Stop Monitoring")
-        self.stop_graph_button.clicked.connect(self.stop_packet_monitoring)
-        self.stop_graph_button.setEnabled(False)
-        left_panel.addWidget(self.stop_graph_button)
-
+        
         # Status Area
         self.status_label = QLabel("Ready")
         left_panel.addWidget(self.status_label)
-
+        
         # Packet Visualization
         self.visualization = PacketVisualization()
         right_panel.addWidget(self.visualization)
@@ -162,6 +146,23 @@ class SteganographyApp(QMainWindow):
         self.monitor_thread = None
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(self.plot_packet_counts_over_time)
+
+        # Send Button
+        self.send_button = QPushButton("Send")
+        self.send_button.clicked.connect(self.send_message)
+        right_panel.addWidget(self.send_button)
+
+        # Start/Stop Graph Button
+        self.start_graph_button = QPushButton("Start Monitoring Packets")
+        self.start_graph_button.clicked.connect(self.start_packet_monitoring)
+        right_panel.addWidget(self.start_graph_button)
+
+        # Stop Monitoring Button
+        self.stop_graph_button = QPushButton("Stop Monitoring")
+        self.stop_graph_button.clicked.connect(self.stop_packet_monitoring)
+        self.stop_graph_button.setEnabled(False)
+        right_panel.addWidget(self.stop_graph_button)
+
 
     def save_configurations(self):
         try:

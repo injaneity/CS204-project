@@ -3,9 +3,9 @@ import threading
 import time
 import random
 import string
-import encoder
-import decoder
-import stego_utils
+import app.encoder.encoder as encoder
+import app.decoder.decoder as decoder
+import app.encoder.stego_utils as stego_utils
 
 def generate_random_message(length=10):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))

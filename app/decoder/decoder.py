@@ -1,5 +1,5 @@
 from scapy.all import IP, TCP, IPOption, sniff, Raw
-from stego_utils import read_config
+from encoder.stego_utils import read_config
 
 # Global variables to store the accumulated binary message
 binary_message = ""

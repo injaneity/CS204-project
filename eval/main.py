@@ -1,9 +1,9 @@
 import argparse
 import threading
 import time
-import encoder 
-import network_noise_generator 
-import decoder  
+import app.encoder.encoder as encoder 
+import app.encoder.network_noise_generator as network_noise_generator 
+import app.decoder.decoder as decoder  
 from scapy.all import sniff 
 
 def start_network_noise(destination_ip, destination_port):

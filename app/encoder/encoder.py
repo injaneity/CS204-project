@@ -1,10 +1,10 @@
 from scapy.all import IP, TCP, send, Raw
-from stego_utils import read_config
-import stego_utils
+from encoder.stego_utils import read_config
+import encoder.stego_utils as stego_utils
 import random
 import time
 import threading
-import network_noise_generator  # Ensure this is in the same directory or properly installed
+import encoder.network_noise_generator as network_noise_generator  # Ensure this is in the same directory or properly installed
 
 # Define available headers and their maximum bits
 headers_info = {
