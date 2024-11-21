@@ -17,7 +17,7 @@ pip install -r requirements.txt
 2. Start Decoder App
 
 ```
-python3 decoder_app.py
+python3 app/decoder_app.py
 ```
 
 - **DO NOT RUN IT YET!**
@@ -25,7 +25,7 @@ python3 decoder_app.py
 3. Start Encoder App
 
 ```
-python3 encoder_app.py
+python3 app/encoder_app.py
 ```
 
 - Choose your header fields
